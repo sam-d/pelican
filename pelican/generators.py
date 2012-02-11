@@ -174,30 +174,30 @@ class ArticlesGenerator(Generator):
                     blog=True, paginated=paginated, page_name=template)
 
         # and subfolders after that
-        tag_template = self.get_template('tag')
-        for tag, articles in self.tags.items():
-            articles.sort(key=attrgetter('date'), reverse=True)
-            dates = [article for article in self.dates if article in articles]
-            write('tag/%s.html' % tag, tag_template, self.context, tag=tag,
-                articles=articles, dates=dates,
-                paginated={'articles': articles, 'dates': dates},
-                page_name='tag/%s' % tag)
-
-        category_template = self.get_template('category')
-        for cat, articles in self.categories:
-            dates = [article for article in self.dates if article in articles]
-            write('category/%s.html' % cat, category_template, self.context,
-                category=cat, articles=articles, dates=dates,
-                paginated={'articles': articles, 'dates': dates},
-                page_name='category/%s' % cat)
-
-        author_template = self.get_template('author')
-        for aut, articles in self.authors:
-            dates = [article for article in self.dates if article in articles]
-            write('author/%s.html' % aut, author_template, self.context,
-                author=aut, articles=articles, dates=dates,
-                paginated={'articles': articles, 'dates': dates},
-                page_name='author/%s' % aut)
+#        tag_template = self.get_template('tag')
+#        for tag, articles in self.tags.items():
+#            articles.sort(key=attrgetter('date'), reverse=True)
+#            dates = [article for article in self.dates if article in articles]
+#            write('tag/%s.html' % tag, tag_template, self.context, tag=tag,
+#                articles=articles, dates=dates,
+#                paginated={'articles': articles, 'dates': dates},
+#                page_name='tag/%s' % tag)
+#
+#        category_template = self.get_template('category')
+#        for cat, articles in self.categories:
+#            dates = [article for article in self.dates if article in articles]
+#            write('category/%s.html' % cat, category_template, self.context,
+#                category=cat, articles=articles, dates=dates,
+#                paginated={'articles': articles, 'dates': dates},
+#                page_name='category/%s' % cat)
+#
+#        author_template = self.get_template('author')
+#        for aut, articles in self.authors:
+#            dates = [article for article in self.dates if article in articles]
+#            write('author/%s.html' % aut, author_template, self.context,
+#                author=aut, articles=articles, dates=dates,
+#                paginated={'articles': articles, 'dates': dates},
+#                page_name='author/%s' % aut)
 
         for article in self.drafts:
             write('drafts/%s.html' % article.slug, article_template, self.context,
