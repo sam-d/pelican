@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import argparse
+from HTMLParser import HTMLParser
 import os
 import subprocess
 import sys
@@ -29,7 +30,8 @@ def wp2fields(xml):
         if item.fetch('wp:status')[0].contents[0] == "publish":
 
             try:
-                title = item.title.contents[0]
+                # Use HTMLParser due to issues with BeautifulSoup 3
+                title = HTMLParser().unescape(item.title.contents[0])
             except IndexError:
                 continue
 
@@ -179,44 +181,53 @@ def feed2fields(file):
         yield (entry.title, entry.description, slug, date, author, [], tags, "html")
 
 
-def build_header(title, date, author, categories, tags):
+def build_header(title, date, author, categories, tags, slug):
     """Build a header from a list of fields"""
     header = '%s\n%s\n' % (title, '#' * len(title))
     if date:
         header += ':date: %s\n' % date
+    if author:
+        header += ':author: %s\n' % author
     if categories:
         header += ':category: %s\n' % ', '.join(categories)
     if tags:
         header += ':tags: %s\n' % ', '.join(tags)
+    if slug:
+        header += ':slug: %s\n' % slug
     header += '\n'
     return header
 
-def build_markdown_header(title, date, author, categories, tags):
+def build_markdown_header(title, date, author, categories, tags, slug):
     """Build a header from a list of fields"""
     header = 'Title: %s\n' % title
     if date:
         header += 'Date: %s\n' % date
+    if author:
+        header += 'Author: %s\n' % author
     if categories:
         header += 'Category: %s\n' % ', '.join(categories)
     if tags:
         header += 'Tags: %s\n' % ', '.join(tags)
+    if slug:
+        header += 'Slug: %s\n' % slug
     header += '\n'
     return header
 
-def fields2pelican(fields, out_markup, output_path, dircat=False, strip_raw=False):
+def fields2pelican(fields, out_markup, output_path, dircat=False, strip_raw=False, disable_slugs=False):
     for title, content, filename, date, author, categories, tags, in_markup in fields:
+        slug = not disable_slugs and filename or None
         if (in_markup == "markdown") or (out_markup == "markdown") :
             ext = '.md'
-            header = build_markdown_header(title, date, author, categories, tags)
+            header = build_markdown_header(title, date, author, categories, tags, slug)
         else:
             out_markup = "rst"
             ext = '.rst'
-            header = build_header(title, date, author, categories, tags)
+            header = build_header(title, date, author, categories, tags, slug)
 
         filename = os.path.basename(filename)
 
         # option to put files in directories with categories names
-        if dircat and (len(categories) == 1):
+        if dircat and (len(categories) > 0):
             catname = slugify(categories[0])
             out_filename = os.path.join(output_path, catname, filename+ext)
             if not os.path.isdir(os.path.join(output_path, catname)):
@@ -232,8 +243,8 @@ def fields2pelican(fields, out_markup, output_path, dircat=False, strip_raw=Fals
             with open(html_filename, 'w', encoding='utf-8') as fp:
                 # Replace newlines with paragraphs wrapped with <p> so
                 # HTML is valid before conversion
-                paragraphs = content.split('\n\n')
-                paragraphs = [u'<p>{}</p>'.format(p) for p in paragraphs]
+                paragraphs = content.splitlines()
+                paragraphs = [u'<p>{0}</p>'.format(p) for p in paragraphs]
                 new_content = ''.join(paragraphs)
 
                 fp.write(new_content)
@@ -272,8 +283,8 @@ def fields2pelican(fields, out_markup, output_path, dircat=False, strip_raw=Fals
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Transform feed, Wordpress or Dotclear files to rst files."
-            "Be sure to have pandoc installed",
+        description="Transform feed, Wordpress or Dotclear files to reST (rst) "
+                    "or Markdown (md) files. Be sure to have pandoc installed.",
         formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument(dest='input', help='The input file to read')
@@ -292,6 +303,11 @@ def main():
     parser.add_argument('--strip-raw', action='store_true', dest='strip_raw',
         help="Strip raw HTML code that can't be converted to "
              "markup such as flash embeds or iframes (wordpress import only)")
+    parser.add_argument('--disable-slugs', action='store_true',
+        dest='disable_slugs',
+        help='Disable storing slugs from imported posts within output. '
+             'With this disabled, your Pelican URLs may not be consistent '
+             'with your original posts.')
 
     args = parser.parse_args()
 
@@ -322,4 +338,5 @@ def main():
 
     fields2pelican(fields, args.markup, args.output,
                    dircat=args.dircat or False,
-                   strip_raw=args.strip_raw or False)
+                   strip_raw=args.strip_raw or False,
+                   disable_slugs=args.disable_slugs or False)
