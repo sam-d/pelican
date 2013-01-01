@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 from setuptools import setup
 
 requires = ['feedgenerator', 'jinja2 >= 2.4', 'pygments', 'docutils', 'pytz', 'blinker']
